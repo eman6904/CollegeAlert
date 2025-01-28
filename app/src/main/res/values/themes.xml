@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="DatePickerTheme" parent="Theme.AppCompat.Light.Dialog">
+        <item name="android:colorAccent">@color/appColor2</item>
+        <item name="colorAccent">@color/appColor2</item>
+    </style>
+    <style name="Theme.CollegeAlart" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
