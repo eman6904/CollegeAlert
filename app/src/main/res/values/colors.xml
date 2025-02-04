@@ -7,10 +7,11 @@
     <color name="teal_700">#16C47F</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="appColor1">#FABC3F</color>
-    <color name="appColor2">#30B336</color>
-    <color name="circleColor">#C9EDBA</color>
+    <color name="appColor1">#0D5895</color>
+    <color name="appColor2">#FFC107</color>
+    <color name="circleColor">#E9FBE1</color>
 </resources>
 
-<!--    16C47F-->
-<!--    FF018786-->
+
+<!--    FABC3F-->
+<!--    31A336-->

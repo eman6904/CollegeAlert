@@ -37,7 +37,6 @@ fun BottomBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     showBottomBar = when (navBackStackEntry?.destination?.route) {
         NavigationItems.Events.route -> true
-        NavigationItems.NewEvent.route -> true
         NavigationItems.Settings.route -> true
         NavigationItems.Archive.route -> true
         else -> false
@@ -47,7 +46,6 @@ fun BottomBar(navController: NavHostController) {
             if (showBottomBar) {
                 val screens = listOf(
                     NavigationItems.Events,
-                    NavigationItems.NewEvent,
                     NavigationItems.Settings,
                     NavigationItems.Archive,
                 )
@@ -57,7 +55,7 @@ fun BottomBar(navController: NavHostController) {
                     modifier= Modifier
                         .clip(RoundedCornerShape(topEnd = 30.dp, topStart = 30.dp))
                         .shadow(
-                            10.dp,
+                            40.dp,
                             spotColor = Color.Black,
                             shape = RoundedCornerShape(topEnd = 30.dp, topStart = 30.dp)
                         ),
@@ -67,7 +65,6 @@ fun BottomBar(navController: NavHostController) {
                         when(it){
                             NavigationItems.Events->{addItem(it, currentDestination, navController,R.drawable.schedule,it.title)}
                             NavigationItems.Archive->{addItem(it, currentDestination, navController,R.drawable.archive,it.title)}
-                            NavigationItems.NewEvent->{addItem(it, currentDestination, navController,R.drawable.add_event,it.title)}
                             else->{addItem(it, currentDestination, navController,R.drawable.user_settings,it.title)}
                         }
                     }

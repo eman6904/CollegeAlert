@@ -4,11 +4,11 @@ import android.app.DatePickerDialog
 import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
+import android.text.format.DateFormat
+import android.util.Log
 import android.view.ContextThemeWrapper
-import android.widget.CalendarView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,14 +24,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -42,7 +44,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,11 +60,19 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import coil.compose.rememberImagePainter
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.collegealart.MainActivity.Companion.alertViewModel
 import com.example.collegealart.R
+import com.example.collegealart.data.table.AlertTable
+import com.example.collegealart.navigation.ScreensRoute
+import java.io.File
+import java.io.FileOutputStream
 import java.util.Calendar
 
 @Composable
@@ -73,10 +82,10 @@ fun NewEventScreen(navController: NavHostController) {
         mutableStateOf("")
     }
     val aboutEvent = remember {
-        mutableStateOf("")
+        mutableStateOf<String?>(null)
     }
     val location = remember {
-        mutableStateOf("")
+        mutableStateOf<String?>(null)
     }
     val selectedDate = remember {
         mutableStateOf("")
@@ -84,60 +93,32 @@ fun NewEventScreen(navController: NavHostController) {
     val selectedTime = remember {
         mutableStateOf("")
     }
-
+    var imagePath = remember {
+        mutableStateOf<String?>(null)
+    }
+    var soundPath = remember {
+        mutableStateOf<String?>(null)
+    }
+    val emptyTitle = remember {
+        mutableStateOf(false)
+    }
+    val emptyDate = remember {
+        mutableStateOf(false)
+    }
+    val emptyTime = remember {
+        mutableStateOf(false)
+    }
+    val showSaveAlertDialog = remember {
+        mutableStateOf(false)
+    }
+    saveAlertDialog(show = showSaveAlertDialog, navController = navController)
    Box(
        modifier = Modifier.fillMaxSize()
    ){
-       Column(
-           modifier = Modifier
-               .padding(bottom = 0.dp)
-               .fillMaxSize()
-       ){
-           Box(
-               modifier = Modifier
-                   .fillMaxWidth()
-                   .weight(1f),
-               contentAlignment = Alignment.CenterStart
-           ){
-               Box(
-                   modifier = Modifier
-                       .size(200.dp)
-                       .clip(shape = CircleShape)
-                       .background(colorResource(id = R.color.circleColor))
-               )
-           }
-           Box(
-               modifier = Modifier
-                   .fillMaxWidth()
-                   .weight(1f),
-               contentAlignment = Alignment.Center
-           ){
-               Box(
-                   modifier = Modifier
-                       .size(160.dp)
-                       .clip(shape = CircleShape)
-                       .background(colorResource(id = R.color.circleColor))
-               )
-           }
-           Box(
-               modifier = Modifier
-                   .fillMaxWidth()
-                   .padding(end = 35.dp)
-                   .weight(1f),
-               contentAlignment = Alignment.TopEnd
-           ){
-               Box(
-                   modifier = Modifier
-                       .size(100.dp)
-                       .clip(shape = CircleShape)
-                       .background(colorResource(id = R.color.circleColor))
-               )
-           }
-       }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 15.dp, end = 15.dp, top = 15.dp, bottom = 80.dp),
+            .padding(start = 15.dp, end = 15.dp, top = 15.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
@@ -154,46 +135,94 @@ fun NewEventScreen(navController: NavHostController) {
             underlinedTextField(
                 value = title.value,
                 onValueChange = { newValue -> title.value = newValue },
+                emptyTitle = emptyTitle,
                 placeholder = "Title"
             )
         }
         item {
             Spacer(modifier = Modifier.height(10.dp))
             underlinedTextField(
-                value = aboutEvent.value,
+                value = aboutEvent.value?:"",
                 onValueChange = { newValue -> aboutEvent.value = newValue },
                 placeholder = "About Event"
             )
         }
         item {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(15.dp))
             underlinedTextField(
-                value = location.value,
+                value = location.value?:"",
                 onValueChange = { newValue -> location.value = newValue },
                 placeholder = "Location"
             )
         }
         item {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(15.dp))
             calenderView(
                 selectedDate = selectedDate,
                 selectedTime = selectedTime,
-                placeholder = "Select date"
+                placeholder = "Select date",
+                isEmpty = emptyDate
             )
         }
         item {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(15.dp))
             calenderView(
                 selectedDate = selectedDate,
                 selectedTime = selectedTime,
-                placeholder = "Select time"
+                placeholder = "Select time",
+                isEmpty = emptyTime
             )
         }
         item {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(15.dp))
             Row {
-                imagePicker()
-                soundPicker()
+                imagePicker(
+                    imagePath = imagePath
+                )
+                soundPicker(
+                    soundPath = soundPath
+                )
+            }
+        }
+        item {
+            Spacer(modifier = Modifier.height(30.dp))
+            Button(
+                onClick = {
+                    emptyDate.value = selectedDate.value.isEmpty()
+                    emptyTime.value = selectedTime.value.isEmpty()
+                    emptyTitle.value = title.value.isEmpty()
+                    if(!emptyTime.value&&!emptyDate.value&&!emptyTitle.value){
+                        alertViewModel.insertAlert(
+                            AlertTable(
+                                alertTitle = title.value,
+                                aboutAlert = aboutEvent.value,
+                                location = location.value,
+                                date = selectedDate.value,
+                                time = selectedTime.value,
+                                imagePath = imagePath.value,
+                                soundPath = soundPath.value
+                            )
+                        )
+                        showSaveAlertDialog.value = true
+                    }
+
+                },
+                modifier = Modifier
+                    .padding(horizontal = 10.dp)
+                    .shadow(10.dp, RoundedCornerShape(20.dp))
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    contentColor = Color.White,
+                    containerColor = colorResource(id = R.color.appColor1)
+                )
+            ) {
+                Text(
+                    text = "Done",
+                    fontSize = 20.sp,
+                    fontFamily = FontFamily(Font(R.font.bold)),
+                    modifier = Modifier.padding(5.dp)
+                )
             }
         }
 
@@ -205,19 +234,24 @@ fun NewEventScreen(navController: NavHostController) {
 fun calenderView(
     selectedDate: MutableState<String>,
     selectedTime: MutableState<String>,
-    placeholder: String
+    placeholder: String,
+    isEmpty :MutableState<Boolean>
 ) {
 
     val mContext = LocalContext.current
     val mCalendar = Calendar.getInstance()
     val mHour = mCalendar[Calendar.HOUR_OF_DAY]
     val mMinute = mCalendar[Calendar.MINUTE]
-    val mAM_BM = mCalendar[Calendar.AM_PM]
     val mTimePickerDialog = android.app.TimePickerDialog(
         mContext,
         R.style.DatePickerTheme,
         { _, mHour: Int, mMinute: Int ->
-           selectedTime.value = "$mHour:$mMinute $mAM_BM"
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, mHour)
+                set(Calendar.MINUTE, mMinute)
+            }
+            // تنسيق الوقت إلى 12 ساعة تلقائيًا
+            selectedTime.value = DateFormat.format("hh:mm a", calendar).toString()
         }, mHour, mMinute, false
     )
     val mYear = mCalendar[Calendar.YEAR]
@@ -265,16 +299,43 @@ fun calenderView(
                     if (selectedTime.value.isEmpty())
                         placeholder else selectedTime.value
                 },
-                color = Color.Gray
+                color = if(placeholder=="Select date"){
+
+                    if (selectedDate.value.isEmpty())
+                        Color.Gray else Color.Black
+                }else{
+
+                    if (selectedTime.value.isEmpty())
+                        Color.Gray else Color.Black
+                },
+                modifier = Modifier.weight(1f)
+            )
+            Box(
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+               Text(
+                   text =" * ",
+                   color = Color.Red,
+               )
+            }
+        }
+        if(isEmpty.value){
+            Box(
+                modifier = Modifier
+                    .height(2.dp)
+                    .fillMaxWidth()
+                    .background(color = Color.Red)
+                    .shadow(20.dp)
+            )
+        }else{
+            Box(
+                modifier = Modifier
+                    .height(2.dp)
+                    .fillMaxWidth()
+                    .background(color = colorResource(id = R.color.appColor1))
+                    .shadow(20.dp)
             )
         }
-        Box(
-            modifier = Modifier
-                .height(2.dp)
-                .fillMaxWidth()
-                .background(color = colorResource(id = R.color.appColor1))
-                .shadow(20.dp)
-        )
     }
 }
 
@@ -282,7 +343,8 @@ fun calenderView(
 fun underlinedTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    placeholder: String
+    placeholder: String,
+    emptyTitle:MutableState<Boolean> = mutableStateOf(false)
 ) {
     BasicTextField(
         value = value,
@@ -311,19 +373,30 @@ fun underlinedTextField(
                             tint = colorResource(id = R.color.appColor1)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
+                    }else if(placeholder == "Title"){
+                        Box(
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            Text(
+                                text ="*  ",
+                                color = Color.Red,
+                            )
+                        }
                     }
-                    if (value.isEmpty())
-                        Text(
-                            text = placeholder,
-                            color = Color.Gray
-                        )
-                    innerTextField()
+                  Box(
+                      modifier = Modifier
+                      .weight(1f)
+                  ){
+                      if (value.isEmpty())
+                          Text(
+                              text = placeholder,
+                              color = Color.Gray
+                          )
+                      innerTextField()
+                  }
                    if(placeholder!="Location"){
                        Spacer(modifier = Modifier.width(8.dp))
                        Box(
-                           modifier = Modifier
-                               .weight(1f)
-                               .fillMaxWidth(),
                            contentAlignment = Alignment.CenterEnd
                        ) {
                            Icon(
@@ -335,28 +408,57 @@ fun underlinedTextField(
                        }
                    }
                 }
-                Box(
-                    modifier = Modifier
-                        .height(2.dp)
-                        .fillMaxWidth()
-                        .background(color = colorResource(id = R.color.appColor1))
-                        .shadow(20.dp)
-                )
+                if(emptyTitle.value){
+                    Box(
+                        modifier = Modifier
+                            .height(2.dp)
+                            .fillMaxWidth()
+                            .background(Color.Red)
+                            .shadow(20.dp)
+                    )
+                }else{
+                    Box(
+                        modifier = Modifier
+                            .height(2.dp)
+                            .fillMaxWidth()
+                            .background(color = colorResource(id = R.color.appColor1))
+                            .shadow(20.dp)
+                    )
+                }
             }
         }
     )
 }
 
 @Composable
-fun imagePicker() {
-    // Create the launcher
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+fun imagePicker(
+    imagePath:MutableState<String?>
+) {
+    val imageUri = remember {
+        mutableStateOf<Uri?>(null)
+    }
+    val delete = remember{ mutableStateOf(false) }
+    val context = LocalContext.current
+
+    if(delete.value){
+        deleteUri(
+            show = delete ,
+            uri = imageUri,
+            path = imagePath
+        )
+    }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
-            imageUri = uri
+            imageUri.value = uri
         }
     )
+    LaunchedEffect(imageUri.value){
+
+        if(imageUri.value!=null)
+           imagePath.value = saveImageToInternalStorage(context = context, uri = imageUri.value!!)
+
+    }
     Box(
         modifier = Modifier
             .height(150.dp)
@@ -366,16 +468,41 @@ fun imagePicker() {
             .border(2.dp, colorResource(id = R.color.appColor1), RoundedCornerShape(20.dp)),
         contentAlignment = Alignment.Center
     ){
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            contentAlignment = Alignment.TopEnd
+        ){
+            if(imagePath.value!=null){
+                Icon(
+                    Icons.Default.Clear,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable {
+                            delete.value = true
+                        },
+                    tint = colorResource(id = R.color.appColor1)
+                )
+            }
+        }
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ){
-            if(imageUri!=null){
+            if(imagePath.value!=null){
+
                 Image(
-                    painter = rememberImagePainter(imageUri),
+                    painter = rememberImagePainter(imagePath.value),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.size(60.dp)
+                )
+                Text(
+                    text = "image uploaded",
+                    fontSize = 10.sp,
+                    color = colorResource(id = R.color.appColor2)
                 )
             }else{
                 Icon(
@@ -389,26 +516,40 @@ fun imagePicker() {
                         },
                     tint = colorResource(id = R.color.appColor1)
                 )
+                Text(
+                    text = "upload image",
+                    fontSize = 10.sp,
+                    color = colorResource(id = R.color.appColor1)
+                )
             }
-            Text(
-                text = "upload image",
-                fontSize = 10.sp,
-                color = colorResource(id = R.color.appColor1)
-            )
         }
     }
 }
 @Composable
-fun soundPicker() {
-    // Create the launcher
-    var soundUri by remember { mutableStateOf<Uri?>(null) }
+fun soundPicker(
+    soundPath:MutableState<String?>
+) {
+    val soundUri = remember{ mutableStateOf<Uri?>(null) }
+    val playSound = remember{ mutableStateOf(false) }
+    val delete = remember{ mutableStateOf(false) }
     val context = LocalContext.current
     val soundPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
-            soundUri = uri
+            soundUri.value = uri
         }
     )
+    if(delete.value)
+        deleteUri(
+            show = delete,
+            uri = soundUri,
+            path = soundPath
+        )
+    LaunchedEffect(soundUri.value){
+
+        if(soundUri.value!=null)
+            soundPath.value = saveAudioToInternalStorage(context = context,uri = soundUri.value!!)
+    }
     Box(
         modifier = Modifier
             .height(150.dp)
@@ -418,40 +559,278 @@ fun soundPicker() {
             .border(2.dp, colorResource(id = R.color.appColor1), RoundedCornerShape(20.dp)),
         contentAlignment = Alignment.Center
     ){
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            contentAlignment = Alignment.TopEnd
+        ){
+           if(soundPath.value!=null){
+               Icon(
+                   Icons.Default.Clear,
+                   contentDescription = null,
+                   modifier = Modifier
+                       .size(24.dp)
+                       .clickable {
+                           delete.value = true
+                       },
+                   tint = colorResource(id = R.color.appColor1)
+               )
+           }
+        }
         Column(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ){
-            Icon(
-                painter = painterResource(id = R.drawable.upload_sound_icon),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(60.dp)
-                    .padding(5.dp)
-                    .clickable {
-                        soundPickerLauncher.launch("audio/*")
-                    },
-                tint = colorResource(id = R.color.appColor1)
-            )
-            Text(
-                text = "upload sound",
-                fontSize = 10.sp,
-                color = colorResource(id = R.color.appColor1)
-            )
+            if(soundPath.value!=null){
+
+                if(playSound.value){
+                    Icon(
+                        painter = painterResource(id = R.drawable.pause_icon),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(60.dp)
+                            .padding(5.dp)
+                            .clickable {
+                                playSound.value = false
+                            },
+                        tint = colorResource(id = R.color.appColor1)
+                    )
+                }else{
+                    Icon(
+                        painter = painterResource(id = R.drawable.play_icon),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(60.dp)
+                            .padding(5.dp)
+                            .clickable {
+                                playSound.value = true
+                                playSound(soundPath.value!!)
+                            },
+                        tint = colorResource(id = R.color.appColor1)
+                    )
+                }
+                Text(
+                    text = "sound uploaded",
+                    fontSize = 10.sp,
+                    color = colorResource(id = R.color.appColor2)
+                )
+            }else{
+                Icon(
+                    painter = painterResource(id = R.drawable.sound_icon),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .padding(5.dp)
+                        .clickable {
+                            soundPickerLauncher.launch("audio/*")
+                        },
+                    tint = colorResource(id = R.color.appColor1)
+                )
+                Text(
+                    text = "upload sound",
+                    fontSize = 10.sp,
+                    color = colorResource(id = R.color.appColor1)
+                )
+            }
+
         }
-    }
-    LaunchedEffect(soundUri){
-        if(soundUri!=null)
-            playSound(context, soundUri!!)
     }
 
 }
-fun playSound(context: Context, soundUri: Uri) {
+fun playSound( soundPath: String) {
     val mediaPlayer = MediaPlayer()
-    mediaPlayer.setDataSource(context, soundUri)
+    mediaPlayer.setDataSource(soundPath)
     mediaPlayer.prepare()
     mediaPlayer.start()
 }
+fun deleteFile(imagePath:String) {
+    val file = File(imagePath)
+    if(file.exists())
+        file.delete()
+}
+fun saveImageToInternalStorage(context: Context, uri: Uri): String? {
+
+    val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+    val file = File(context.filesDir, "${System.currentTimeMillis()}.jpg")
+    val outputStream = FileOutputStream(file)
+
+    inputStream.copyTo(outputStream)
+    inputStream.close()
+    outputStream.close()
+
+    return file.absolutePath
+}
+fun saveAudioToInternalStorage(context: Context, uri: Uri): String? {
+
+    val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+    val file = File(context.filesDir, "${System.currentTimeMillis()}.mp3")
+    val outputStream = FileOutputStream(file)
+    inputStream.copyTo(outputStream)
+    inputStream.close()
+    outputStream.close()
+    return file.absolutePath
+}
+@Composable
+fun deleteUri(
+    show:MutableState<Boolean>,
+    uri:MutableState<Uri?>,
+    path:MutableState<String?>,
+
+){
+
+    if(show.value) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(colorResource(id = R.color.white))
+        ) {
+            Dialog(
+                onDismissRequest = {
+                    show.value = false
+                }
+            ) {
+
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White)
+
+                ) {
+                    Spacer(modifier = Modifier.height(25.dp))
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = Color.Red,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .padding(5.dp)
+                    )
+                    Text(
+                        text = "Are You Sure ?",
+                        fontSize = 18.sp,
+                        fontFamily = FontFamily(Font(R.font.bold)),
+                        modifier = Modifier.padding(5.dp)
+                    )
+                    Text(
+                        text = "You Want To delete this file",
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(5.dp)
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                deleteFile(path.value!!)
+                                path.value = null
+                                uri.value = null
+                                show.value = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                contentColor = Color.White,
+                                containerColor = Color.Red
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1.5f)
+                                .fillMaxWidth()
+                                .padding(3.dp)
+                        ) {
+                            Text(
+                                text = "Delete",
+                                fontSize = 15.sp,
+                                modifier = Modifier.padding(3.dp)
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                show.value = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                contentColor = Color.White,
+                                containerColor = Color.Gray
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(3.dp)
+                        ) {
+                            Text(
+                                text = "Cancel",
+                                fontSize = 15.sp,
+                                modifier = Modifier.padding(3.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+        }
+    }
+}
+@Composable
+fun saveAlertDialog(
+    show:MutableState<Boolean>,
+    navController: NavHostController
+){
+    if(show.value){
+        Card(
+           shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(colorResource(id = R.color.white))
+        ) {
+            Dialog(
+                onDismissRequest = {
+                    show.value = false
+                }
+            ) {
+                Spacer(modifier = Modifier.height(15.dp))
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White)
+
+                ) {
+                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.done_animation))
+                    val progress by animateLottieCompositionAsState(
+                        composition = composition,
+                        iterations = 1
+                    )
+                    if (composition != null) {
+                        LottieAnimation(
+                            composition = composition,
+                            progress = progress,
+                            modifier = Modifier
+                                .size(300.dp)
+                                .padding(10.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                        )
+                    }
+                    if(progress==1f){
+                        LaunchedEffect(Unit) {
+                            navController.popBackStack()
+                            show.value = false
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+            }
+        }
+    }
+}
+
+
 
 
 

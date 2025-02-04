@@ -6,5 +6,6 @@ sealed class ScreensRoute(val route:String) {
     object SettingsScreen : ScreensRoute(route = "settings")
     object ArchiveScreen : ScreensRoute(route = "archive")
     object NewEventScreen : ScreensRoute(route = "newEventScreen")
+    object UpdateEventScreen : ScreensRoute(route = "updateEventScreen")
 
 }

@@ -25,10 +25,6 @@ sealed class NavigationItems(
         title = "Archive",
         icon = Icons.Default.Home
     )
-    object NewEvent : NavigationItems(
-        route = "newEventScreen",
-        title = "New Event",
-        icon = Icons.Default.Home
-    )
+    
 
 }

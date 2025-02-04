@@ -9,6 +9,7 @@ import com.example.collegealart.ui.screens.EventScreen
 import com.example.collegealart.ui.screens.NewEventScreen
 import com.example.collegealart.ui.screens.SettingsScreen
 import com.example.collegealart.ui.screens.SplashScreen
+import com.example.collegealart.ui.screens.UpdateEventScreen
 
 
 @Composable
@@ -33,6 +34,9 @@ fun AppNavGrav(navController: NavHostController) {
         }
         composable(ScreensRoute.NewEventScreen.route){
             NewEventScreen(navController)
+        }
+        composable(ScreensRoute.UpdateEventScreen.route){
+            UpdateEventScreen(navController)
         }
 
     }
