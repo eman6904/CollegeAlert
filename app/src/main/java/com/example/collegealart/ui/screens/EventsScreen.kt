@@ -1,6 +1,12 @@
 package com.example.collegealart.ui.screens
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -39,10 +46,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,187 +77,213 @@ import com.example.collegealart.data.table.AlertTable
 import com.example.collegealart.navigation.ScreensRoute
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun EventScreen(navController: NavHostController) {
 
     val alerts = alertViewModel.alerts.observeAsState()
-    val showDeleteEventDialog = remember{
+    val showDeleteEventDialog = remember {
         mutableStateOf(false)
     }
-    val showUpdateEventDialog = remember{
+    val showUpdateEventDialog = remember {
         mutableStateOf(false)
     }
     val searchedValue = remember {
         mutableStateOf("")
     }
+    val events = remember {
+        mutableStateOf<List<AlertTable>>(alerts.value!!)
+    }
     val deletedEvent = remember {
-        mutableStateOf<AlertTable>(AlertTable(
-            alertTitle = "",
-            date = "",
-            time = ""))
+        mutableStateOf<AlertTable>(
+            AlertTable(
+                alertTitle = "",
+                date = "",
+                time = ""
+            )
+        )
     }
     val updatedEvent = remember {
-        mutableStateOf<AlertTable>(AlertTable(
-            alertTitle = "",
-            date = "",
-            time = ""))
+        mutableStateOf<AlertTable>(
+            AlertTable(
+                alertTitle = "",
+                date = "",
+                time = ""
+            )
+        )
     }
     val initialValue = remember {
         mutableStateOf("Loading")
     }
-
+    LaunchedEffect(searchedValue.value) {
+        events.value = alerts.value!!.filter { alert ->
+            alert.alertTitle.lowercase()
+                .contains(searchedValue.value.lowercase(), true)
+                    && !isEventPassed(
+                date = alert.date,
+                time = alert.time
+            )
+        }
+        if (events.value == null) {
+            initialValue.value = "Loading.."
+        } else if (events.value!!.isEmpty()) {
+            initialValue.value = "No items"
+        } else {
+            initialValue.value = ""
+        }
+    }
     deleteEventDialog(show = showDeleteEventDialog, alert = deletedEvent.value)
-    updateEventDialog(show = showUpdateEventDialog, alert = updatedEvent.value, navController = navController)
+    updateEventDialog(
+        show = showUpdateEventDialog,
+        alert = updatedEvent.value,
+        navController = navController
+    )
 
-   Box(){
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(5.dp, bottom = 90.dp, top = 20.dp)
-
+    Box() {
+        Column(
+            modifier = Modifier.padding(top = 20.dp)
         ) {
-            item {
-                Row(
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                searchField(
+                    modifier = Modifier.weight(4f),
+                    value = searchedValue.value,
+                    onValueChange = { newValue -> searchedValue.value = newValue },
+                    placeholder = "Search"
+                )
+                Icon(
+                    painter = painterResource(id = R.drawable.add_event),
+                    contentDescription = null,
+                    tint = colorResource(id = R.color.appColor1),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    searchField(
-                        modifier = Modifier.weight(4f),
-                        value = searchedValue.value,
-                        onValueChange = { newValue -> searchedValue.value = newValue },
-                        placeholder = "Search"
-                    )
-                    Icon(
-                        painter = painterResource(id = R.drawable.add_event),
-                        contentDescription = null,
-                        tint = colorResource(id = R.color.appColor1),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(5.dp)
-                            .clickable {
-                                navController.navigate(ScreensRoute.NewEventScreen.route)
-                            }
-                    )
-                }
+                        .weight(1f)
+                        .padding(5.dp)
+                        .clickable {
+                            navController.navigate(ScreensRoute.NewEventScreen.route)
+                        }
+                )
             }
-            if (alerts.value == null) {
-                initialValue.value = "Loading.."
-            } else if (alerts.value!!.isEmpty()) {
-                initialValue.value = "No items"
-            } else {
-                initialValue.value = ""
-                for (alert in alerts.value!!) {
-                    item {
-                     //   event(alert = alert)
-                        val dismissState = rememberDismissState(
-                            confirmStateChange = {
-                                if (it == DismissValue.DismissedToStart) {
-                                    deletedEvent.value = alert
-                                    showDeleteEventDialog.value = true
-                                }else if(it == DismissValue.DismissedToEnd){
-                                    updatedEvent.value = alert.copy()
-                                    showUpdateEventDialog.value = true
-                                }
-                                false
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 5.dp, end = 5.dp, bottom = 80.dp)
+
+            ) {
+                items(
+                    items = events.value,
+                    key = { item: AlertTable -> item.id }
+                ) { alert ->
+                    val dismissState = rememberDismissState(
+                        confirmStateChange = {
+                            if (it == DismissValue.DismissedToStart) {
+                                deletedEvent.value = alert
+                                showDeleteEventDialog.value = true
+                            } else if (it == DismissValue.DismissedToEnd) {
+                                updatedEvent.value = alert.copy()
+                                showUpdateEventDialog.value = true
                             }
-                        )
+                            false
+                        }
+                    )
 
-                        SwipeToDismiss(
-                            state = dismissState,
-                            directions = setOf(
-                                DismissDirection.StartToEnd,
-                                DismissDirection.EndToStart
-                            ),
-                            background = {
+                    SwipeToDismiss(
+                        state = dismissState,
+                        directions = setOf(
+                            DismissDirection.StartToEnd,
+                            DismissDirection.EndToStart
+                        ),
+                        background = {
 
-                                val color = when (dismissState.dismissDirection) {
-                                    DismissDirection.StartToEnd -> colorResource(id = R.color.appColor1)
-                                    DismissDirection.EndToStart -> Color.Red
-                                    null -> MaterialTheme.colors.background
-                                }
-                                when (dismissState.dismissDirection) {
-                                    DismissDirection.StartToEnd -> {
-                                        Box(
+                            val color = when (dismissState.dismissDirection) {
+                                DismissDirection.StartToEnd -> colorResource(id = R.color.appColor1)
+                                DismissDirection.EndToStart -> Color.Red
+                                null -> MaterialTheme.colors.background
+                            }
+                            when (dismissState.dismissDirection) {
+                                DismissDirection.StartToEnd -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(10.dp)
+                                            .clip(shape = RoundedCornerShape(20.dp))
+                                            .background(color),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Edit,
+                                            contentDescription = null,
+                                            tint = Color.White,
                                             modifier = Modifier
-                                                .fillMaxSize()
                                                 .padding(10.dp)
-                                                .clip(shape = RoundedCornerShape(20.dp))
-                                                .background(color),
-                                            contentAlignment = Alignment.CenterStart
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Edit,
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier
-                                                    .padding(10.dp)
-                                                    .size(50.dp)
-                                            )
-                                        }
-                                    }
-
-                                    else -> {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .padding(10.dp)
-                                                .clip(shape = RoundedCornerShape(20.dp))
-                                                .background(color),
-                                            contentAlignment = Alignment.CenterEnd
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Delete,
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier
-                                                    .padding(10.dp)
-                                                    .size(50.dp)
-                                            )
-                                        }
+                                                .size(50.dp)
+                                        )
                                     }
                                 }
 
-                            },
-                            dismissContent = {
+                                else -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(10.dp)
+                                            .clip(shape = RoundedCornerShape(20.dp))
+                                            .background(color),
+                                        contentAlignment = Alignment.CenterEnd
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier
+                                                .padding(10.dp)
+                                                .size(50.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                        },
+                        dismissContent = {
+
+                            var isVisible by remember { mutableStateOf(false) }
+                            LaunchedEffect(Unit) {
+                                isVisible = true
+                            }
+                            AnimatedVisibility(
+                                visible = isVisible,
+                                enter = fadeIn(animationSpec = tween(durationMillis = 3000)) +
+                                        expandVertically(animationSpec = tween(durationMillis = 2000)),
+                            ) {
                                 event(
                                     alert
                                 )
-//                                var isVisible by remember { mutableStateOf(false) }
-//                                LaunchedEffect(Unit) {
-//                                    isVisible = true
-//                                }
-//                                AnimatedVisibility(
-//                                    visible = isVisible,
-//                                    enter = fadeIn(animationSpec = tween(durationMillis = 3000)) +
-//                                            expandVertically(animationSpec = tween(durationMillis = 2000)),
-//                                ) {
-//
-//                                }
 
                             }
-                        )
-                    }
+
+                        }
+                    )
                 }
             }
         }
-       Box(
-           modifier = Modifier.fillMaxSize(),
-           contentAlignment = Alignment.Center
-       ) {
-           Text(
-               text = initialValue.value
-           )
-       }
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = initialValue.value
+            )
+        }
     }
 }
 
 @Composable
 fun event(
-    alert:AlertTable
+    alert: AlertTable
 ) {
 
     Card(
@@ -259,7 +295,7 @@ fun event(
             .clip(shape = RoundedCornerShape(20.dp)),
         colors = CardDefaults.cardColors(Color.White),
         elevation = CardDefaults.cardElevation(20.dp)
-    ){
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
 
@@ -270,23 +306,22 @@ fun event(
                     .fillMaxSize()
                     .weight(1f)
                     .padding(8.dp)
-                    .height(90.dp)
-                  ,
+                    .height(90.dp),
                 shape = CircleShape,
                 colors = CardDefaults.cardColors(Color.White)
-            ){
+            ) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.fillMaxSize()
-                ){
-                    if(alert.imagePath == null) {
+                ) {
+                    if (alert.imagePath == null) {
                         Image(
-                            painter = painterResource(R.drawable.code_alpha),
+                            painter = painterResource(R.drawable.college_alert_app_icon),
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
-                    }else{
+                    } else {
                         Image(
                             painter = rememberImagePainter(alert.imagePath),
                             contentDescription = null,
@@ -326,6 +361,7 @@ fun event(
         }
     }
 }
+
 @Composable
 fun searchField(
     modifier: Modifier,
@@ -361,22 +397,22 @@ fun searchField(
                         .fillMaxWidth()
                         .padding(8.dp)
                 ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                            tint = colorResource(id = R.color.appColor1)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                     Box(){
-                         if (value.isEmpty())
-                             Text(
-                                 text = placeholder,
-                                 color = Color.Gray
-                             )
-                         innerTextField()
-                     }
-                    if(value.isNotEmpty()){
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = colorResource(id = R.color.appColor1)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box() {
+                        if (value.isEmpty())
+                            Text(
+                                text = placeholder,
+                                color = Color.Gray
+                            )
+                        innerTextField()
+                    }
+                    if (value.isNotEmpty()) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
@@ -387,7 +423,11 @@ fun searchField(
                             Icon(
                                 imageVector = Icons.Default.Clear,
                                 contentDescription = null,
-                                modifier = Modifier.size(28.dp),
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clickable {
+
+                                    },
                                 tint = colorResource(id = R.color.appColor1)
                             )
                         }
@@ -397,15 +437,16 @@ fun searchField(
         }
     )
 }
+
 @Composable
 fun deleteEventDialog(
     show: MutableState<Boolean>,
-    alert:AlertTable
-    ){
+    alert: AlertTable
+) {
 
     val selectedAlerts = alertViewModel.selectedIds.observeAsState()
 
-    if(show.value) {
+    if (show.value) {
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(colorResource(id = R.color.white))
@@ -453,7 +494,7 @@ fun deleteEventDialog(
                     ) {
                         Button(
                             onClick = {
-                               alertViewModel.addToSelectedIds(alert.id)
+                                alertViewModel.addToSelectedIds(alert.id)
                                 selectedAlerts.value?.let { alertViewModel.deleteAlert(it) }
                                 show.value = false
                             },
@@ -500,14 +541,15 @@ fun deleteEventDialog(
         }
     }
 }
+
 @Composable
 fun updateEventDialog(
     show: MutableState<Boolean>,
-    alert:AlertTable,
+    alert: AlertTable,
     navController: NavHostController
-){
+) {
 
-    if(show.value) {
+    if (show.value) {
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(colorResource(id = R.color.white))
@@ -556,9 +598,9 @@ fun updateEventDialog(
                         Button(
                             onClick = {
 
-                               alertViewModel.setSelectedAlertToEdit(alert)
-                               navController.navigate(ScreensRoute.UpdateEventScreen.route)
-                               show.value = false
+                                alertViewModel.setSelectedAlertToEdit(alert)
+                                navController.navigate(ScreensRoute.UpdateEventScreen.route)
+                                show.value = false
                             },
                             colors = ButtonDefaults.buttonColors(
                                 contentColor = Color.White,

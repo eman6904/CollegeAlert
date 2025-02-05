@@ -3,10 +3,13 @@ package com.example.collegealart
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.format.DateFormat
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -76,6 +79,7 @@ fun parseDateTime(date: String, time: String): Long? {
         null
     }
 }
+
 fun createNotificationChannel(context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val channel = NotificationChannel(
@@ -91,31 +95,38 @@ fun createNotificationChannel(context: Context) {
     }
 }
 fun scheduleEventNotifications(context: Context, alertList: List<AlertTable>) {
-    val eventTimes = alertList.mapNotNull { alert ->
-        parseDateTime(alert.date, alert.time)
+    val eventData = alertList.mapNotNull { alert ->
+        val eventTime = parseDateTime(alert.date, alert.time)
+        eventTime?.let {
+            Pair(it, alert.alertTitle)
+        }
     }
 
     val workRequest = OneTimeWorkRequestBuilder<EventNotificationWorker>()
         .setInputData(
             Data.Builder()
-                .putLongArray("event_times", eventTimes.toLongArray()) // تمرير القائمة بعد تحويلها
+                .putStringArray("event_titles", eventData.map { it.second }.toTypedArray())
+                .putLongArray("event_times", eventData.map { it.first }.toLongArray())
                 .build()
         )
-        .setInitialDelay(1, TimeUnit.MINUTES) // يتم التحقق كل دقيقة
+        .setInitialDelay(1, TimeUnit.MINUTES)
         .build()
 
     WorkManager.getInstance(context).enqueue(workRequest)
 }
+
 class EventNotificationWorker(appContext: Context, workerParams: WorkerParameters) :
     Worker(appContext, workerParams) {
 
     override fun doWork(): Result {
         val eventTimes = inputData.getLongArray("event_times") ?: return Result.failure()
+        val eventTitles = inputData.getStringArray("event_titles") ?: return Result.failure()
+
         val currentTime = System.currentTimeMillis()
 
-        for (eventTime in eventTimes) {
+        for ((index, eventTime) in eventTimes.withIndex()) {
             if (isSameMinute(eventTime, currentTime)) {
-                sendNotification(eventTime)
+                sendNotification(eventTime, eventTitles[index])
             }
         }
 
@@ -130,23 +141,29 @@ class EventNotificationWorker(appContext: Context, workerParams: WorkerParameter
                 calendar1[Calendar.MONTH] == calendar2[Calendar.MONTH] &&
                 calendar1[Calendar.DAY_OF_MONTH] == calendar2[Calendar.DAY_OF_MONTH] &&
                 calendar1[Calendar.HOUR_OF_DAY] == calendar2[Calendar.HOUR_OF_DAY] &&
-                calendar1[Calendar.MINUTE] == calendar2[Calendar.MINUTE] // التحقق بالدقائق فقط
+                calendar1[Calendar.MINUTE] == calendar2[Calendar.MINUTE]
     }
 
-    private fun sendNotification(eventTime: Long) {
+    private fun sendNotification(eventTime: Long, title: String) {
         val notificationManager =
             applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val bitmapOptions = BitmapFactory.Options().apply { inScaled = false } // تقليل الدقة بنسبة 50%
+        val largeIcon = BitmapFactory.decodeResource(applicationContext.resources, R.drawable.reminder, bitmapOptions)
+
+
+
         val notification = NotificationCompat.Builder(applicationContext, "event_channel")
-            .setContentTitle("Event Reminder")
-            .setContentText("It's time for your event at ${DateFormat.format("hh:mm a", eventTime)}!")
-            .setSmallIcon(android.R.drawable.ic_notification_overlay)
+            .setContentTitle("Welcome Dear ^^")
+            .setContentText("We want to remind you of ${title} at ${DateFormat.format("hh:mm a", eventTime)}!")
+            .setSmallIcon(R.drawable.college_alert_app_icon)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setStyle(NotificationCompat.BigPictureStyle()
+                .bigPicture(largeIcon))
             .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
             .build()
 
         notificationManager.notify(eventTime.hashCode(), notification)
     }
 }
-
-
 

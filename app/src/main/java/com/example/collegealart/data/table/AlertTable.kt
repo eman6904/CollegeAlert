@@ -13,6 +13,5 @@ data class AlertTable(
     var date:String,
     var time:String ,
     var imagePath:String? = null,
-    var soundPath:String? = null ,
     val timestamp: Long = System.currentTimeMillis()
 )

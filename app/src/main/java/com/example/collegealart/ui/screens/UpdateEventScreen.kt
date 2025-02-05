@@ -54,9 +54,6 @@ fun UpdateEventScreen(navController:NavHostController){
     var imagePath = remember {
         mutableStateOf<String?>(selectedAlert.value!!.imagePath)
     }
-    var soundPath = remember {
-        mutableStateOf<String?>(selectedAlert.value!!.soundPath)
-    }
     val emptyTitle = remember {
         mutableStateOf(false)
     }
@@ -138,9 +135,6 @@ fun UpdateEventScreen(navController:NavHostController){
                     imagePicker(
                         imagePath = imagePath
                     )
-                    soundPicker(
-                        soundPath = soundPath
-                    )
                 }
             }
             item {
@@ -151,16 +145,6 @@ fun UpdateEventScreen(navController:NavHostController){
                         emptyTime.value = selectedTime.value.isEmpty()
                         emptyTitle.value = title.value.isEmpty()
                         if(!emptyTime.value&&!emptyDate.value&&!emptyTitle.value){
-                            Log.d("Alert",AlertTable(
-                                id = selectedAlert.value!!.id,
-                                alertTitle = title.value,
-                                aboutAlert = aboutEvent.value,
-                                location = location.value,
-                                date = selectedDate.value,
-                                time = selectedTime.value,
-                                imagePath = imagePath.value,
-                                soundPath = soundPath.value
-                            ).toString())
                             alertViewModel.updateAlert(
                                 AlertTable(
                                     id = selectedAlert.value!!.id,
@@ -170,7 +154,6 @@ fun UpdateEventScreen(navController:NavHostController){
                                     date = selectedDate.value,
                                     time = selectedTime.value,
                                     imagePath = imagePath.value,
-                                    soundPath = soundPath.value
                                 )
                             )
                             showSaveAlertDialog.value = true

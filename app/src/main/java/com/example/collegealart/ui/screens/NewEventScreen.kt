@@ -5,7 +5,6 @@ import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
 import android.text.format.DateFormat
-import android.util.Log
 import android.view.ContextThemeWrapper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -70,7 +69,6 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.collegealart.MainActivity.Companion.alertViewModel
 import com.example.collegealart.R
 import com.example.collegealart.data.table.AlertTable
-import com.example.collegealart.navigation.ScreensRoute
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Calendar
@@ -94,9 +92,6 @@ fun NewEventScreen(navController: NavHostController) {
         mutableStateOf("")
     }
     var imagePath = remember {
-        mutableStateOf<String?>(null)
-    }
-    var soundPath = remember {
         mutableStateOf<String?>(null)
     }
     val emptyTitle = remember {
@@ -179,9 +174,6 @@ fun NewEventScreen(navController: NavHostController) {
                 imagePicker(
                     imagePath = imagePath
                 )
-                soundPicker(
-                    soundPath = soundPath
-                )
             }
         }
         item {
@@ -200,7 +192,6 @@ fun NewEventScreen(navController: NavHostController) {
                                 date = selectedDate.value,
                                 time = selectedTime.value,
                                 imagePath = imagePath.value,
-                                soundPath = soundPath.value
                             )
                         )
                         showSaveAlertDialog.value = true
@@ -461,8 +452,8 @@ fun imagePicker(
     }
     Box(
         modifier = Modifier
-            .height(150.dp)
-            .width(150.dp)
+            .height(155.dp)
+            .width(300.dp)
             .padding(5.dp)
             .clip(RoundedCornerShape(20.dp))
             .border(2.dp, colorResource(id = R.color.appColor1), RoundedCornerShape(20.dp)),
@@ -497,12 +488,12 @@ fun imagePicker(
                     painter = rememberImagePainter(imagePath.value),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(60.dp)
+                    modifier = Modifier.size(100.dp)
                 )
                 Text(
-                    text = "image uploaded",
-                    fontSize = 10.sp,
-                    color = colorResource(id = R.color.appColor2)
+                    text = "image uploaded successfully",
+                    fontSize = 13.sp,
+                    color = Color.Green
                 )
             }else{
                 Icon(
@@ -525,125 +516,6 @@ fun imagePicker(
         }
     }
 }
-@Composable
-fun soundPicker(
-    soundPath:MutableState<String?>
-) {
-    val soundUri = remember{ mutableStateOf<Uri?>(null) }
-    val playSound = remember{ mutableStateOf(false) }
-    val delete = remember{ mutableStateOf(false) }
-    val context = LocalContext.current
-    val soundPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri ->
-            soundUri.value = uri
-        }
-    )
-    if(delete.value)
-        deleteUri(
-            show = delete,
-            uri = soundUri,
-            path = soundPath
-        )
-    LaunchedEffect(soundUri.value){
-
-        if(soundUri.value!=null)
-            soundPath.value = saveAudioToInternalStorage(context = context,uri = soundUri.value!!)
-    }
-    Box(
-        modifier = Modifier
-            .height(150.dp)
-            .width(150.dp)
-            .padding(5.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .border(2.dp, colorResource(id = R.color.appColor1), RoundedCornerShape(20.dp)),
-        contentAlignment = Alignment.Center
-    ){
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            contentAlignment = Alignment.TopEnd
-        ){
-           if(soundPath.value!=null){
-               Icon(
-                   Icons.Default.Clear,
-                   contentDescription = null,
-                   modifier = Modifier
-                       .size(24.dp)
-                       .clickable {
-                           delete.value = true
-                       },
-                   tint = colorResource(id = R.color.appColor1)
-               )
-           }
-        }
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            if(soundPath.value!=null){
-
-                if(playSound.value){
-                    Icon(
-                        painter = painterResource(id = R.drawable.pause_icon),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(60.dp)
-                            .padding(5.dp)
-                            .clickable {
-                                playSound.value = false
-                            },
-                        tint = colorResource(id = R.color.appColor1)
-                    )
-                }else{
-                    Icon(
-                        painter = painterResource(id = R.drawable.play_icon),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(60.dp)
-                            .padding(5.dp)
-                            .clickable {
-                                playSound.value = true
-                                playSound(soundPath.value!!)
-                            },
-                        tint = colorResource(id = R.color.appColor1)
-                    )
-                }
-                Text(
-                    text = "sound uploaded",
-                    fontSize = 10.sp,
-                    color = colorResource(id = R.color.appColor2)
-                )
-            }else{
-                Icon(
-                    painter = painterResource(id = R.drawable.sound_icon),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .padding(5.dp)
-                        .clickable {
-                            soundPickerLauncher.launch("audio/*")
-                        },
-                    tint = colorResource(id = R.color.appColor1)
-                )
-                Text(
-                    text = "upload sound",
-                    fontSize = 10.sp,
-                    color = colorResource(id = R.color.appColor1)
-                )
-            }
-
-        }
-    }
-
-}
-fun playSound( soundPath: String) {
-    val mediaPlayer = MediaPlayer()
-    mediaPlayer.setDataSource(soundPath)
-    mediaPlayer.prepare()
-    mediaPlayer.start()
-}
 fun deleteFile(imagePath:String) {
     val file = File(imagePath)
     if(file.exists())
@@ -661,16 +533,7 @@ fun saveImageToInternalStorage(context: Context, uri: Uri): String? {
 
     return file.absolutePath
 }
-fun saveAudioToInternalStorage(context: Context, uri: Uri): String? {
 
-    val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-    val file = File(context.filesDir, "${System.currentTimeMillis()}.mp3")
-    val outputStream = FileOutputStream(file)
-    inputStream.copyTo(outputStream)
-    inputStream.close()
-    outputStream.close()
-    return file.absolutePath
-}
 @Composable
 fun deleteUri(
     show:MutableState<Boolean>,
@@ -784,7 +647,6 @@ fun saveAlertDialog(
     if(show.value){
         Card(
            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(colorResource(id = R.color.white))
         ) {
             Dialog(
                 onDismissRequest = {
@@ -798,7 +660,7 @@ fun saveAlertDialog(
                     modifier = Modifier
                         .padding(10.dp)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White)
+
 
                 ) {
                     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.done_animation))

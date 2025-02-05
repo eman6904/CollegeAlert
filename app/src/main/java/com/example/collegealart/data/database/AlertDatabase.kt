@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.example.collegealart.data.dao.AlertDAO
 import com.example.collegealart.data.table.AlertTable
 
-@Database(entities = [AlertTable::class], version = 2, exportSchema = false)
+@Database(entities = [AlertTable::class], version = 1, exportSchema = false)
 abstract class AlertDatabase : RoomDatabase()
 {
     abstract fun alertDao(): AlertDAO
