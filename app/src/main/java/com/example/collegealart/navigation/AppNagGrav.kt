@@ -1,10 +1,13 @@
 package com.example.collegealart.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.collegealart.ui.screens.ArchiveScreen
+import com.example.collegealart.ui.screens.EventDetailsScreen
 import com.example.collegealart.ui.screens.EventScreen
 import com.example.collegealart.ui.screens.NewEventScreen
 import com.example.collegealart.ui.screens.SettingsScreen
@@ -12,6 +15,7 @@ import com.example.collegealart.ui.screens.SplashScreen
 import com.example.collegealart.ui.screens.UpdateEventScreen
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavGrav(navController: NavHostController) {
 
@@ -37,6 +41,9 @@ fun AppNavGrav(navController: NavHostController) {
         }
         composable(ScreensRoute.UpdateEventScreen.route){
             UpdateEventScreen(navController)
+        }
+        composable(ScreensRoute.EventDetailsScreen.route){
+            EventDetailsScreen(navController)
         }
 
     }

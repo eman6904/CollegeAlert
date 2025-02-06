@@ -3,6 +3,7 @@ package com.example.collegealart
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.BitmapFactory
 import android.media.RingtoneManager
 import android.net.Uri
@@ -18,9 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.NotificationCompat
@@ -31,6 +35,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.example.collegealart.data.sharedPreference.PreferencesManager
 import com.example.collegealart.data.table.AlertTable
 import com.example.collegealart.data.viewModel.AlertViewModel
 import com.example.collegealart.navigation.BottomBar
@@ -66,7 +71,8 @@ class MainActivity : ComponentActivity() {
             val alerts = alertViewModel.alerts.observeAsState()
             createNotificationChannel(this)
             if(!alerts.value.isNullOrEmpty())
-            scheduleEventNotifications(this, alerts.value!!)
+                scheduleEventNotifications(this, alerts.value!!)
+
         }
     }
 }
@@ -123,9 +129,9 @@ class EventNotificationWorker(appContext: Context, workerParams: WorkerParameter
         val eventTitles = inputData.getStringArray("event_titles") ?: return Result.failure()
 
         val currentTime = System.currentTimeMillis()
-
+        val sherdPref = PreferencesManager(applicationContext)
         for ((index, eventTime) in eventTimes.withIndex()) {
-            if (isSameMinute(eventTime, currentTime)) {
+            if (isSameMinute(eventTime, currentTime)&&sherdPref.getValue("Notifications")) {
                 sendNotification(eventTime, eventTitles[index])
             }
         }

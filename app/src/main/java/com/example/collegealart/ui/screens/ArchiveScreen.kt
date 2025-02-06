@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,6 +56,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -74,9 +76,8 @@ import java.time.format.DateTimeFormatter
 fun ArchiveScreen(navController: NavHostController) {
 
     val alerts = alertViewModel.alerts.observeAsState()
-
     val events = remember {
-        mutableStateOf<List<AlertTable>>(alerts.value!!)
+        mutableStateOf(alerts.value!!)
     }
     val showDeleteEventDialog = remember {
         mutableStateOf(false)
@@ -84,20 +85,15 @@ fun ArchiveScreen(navController: NavHostController) {
     val showUpdateEventDialog = remember {
         mutableStateOf(false)
     }
+    val onlyEvent = remember {
+        mutableStateOf(false)
+    }
     val searchedValue = remember {
         mutableStateOf("")
     }
-    val deletedEvent = remember {
-        mutableStateOf<AlertTable>(
-            AlertTable(
-                alertTitle = "",
-                date = "",
-                time = ""
-            )
-        )
-    }
+
     val updatedEvent = remember {
-        mutableStateOf<AlertTable>(
+        mutableStateOf(
             AlertTable(
                 alertTitle = "",
                 date = "",
@@ -108,7 +104,7 @@ fun ArchiveScreen(navController: NavHostController) {
     val initialValue = remember {
         mutableStateOf("Loading")
     }
-    LaunchedEffect(searchedValue.value) {
+    LaunchedEffect(searchedValue.value,alerts.value) {
         events.value = alerts.value!!.filter { alert ->
             alert.alertTitle.lowercase()
                 .contains(searchedValue.value.lowercase(), true)
@@ -125,7 +121,7 @@ fun ArchiveScreen(navController: NavHostController) {
             initialValue.value = ""
         }
     }
-    deleteEventDialog(show = showDeleteEventDialog, alert = deletedEvent.value)
+    deleteEventDialog(show = showDeleteEventDialog,onlyEvent = onlyEvent.value)
     updateEventDialog(
         show = showUpdateEventDialog,
         alert = updatedEvent.value,
@@ -134,12 +130,20 @@ fun ArchiveScreen(navController: NavHostController) {
 
     Box() {
         Column(
-            modifier = Modifier.padding(top = 20.dp)
+            modifier = Modifier.padding(top = 20.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(
+                text = "Expired Events",
+                fontFamily = FontFamily(Font(R.font.bold)),
+                fontSize = 25.sp,
+                color = colorResource(id = R.color.appColor1),
+                modifier = Modifier.padding(0.dp)
+            )
             searchField(
-                modifier = Modifier.padding(10.dp),
-                value = searchedValue.value,
-                onValueChange = { newValue -> searchedValue.value = newValue },
+                modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp),
+                value = searchedValue,
                 placeholder = "Search"
             )
 
@@ -157,7 +161,8 @@ fun ArchiveScreen(navController: NavHostController) {
                     val dismissState = rememberDismissState(
                         confirmStateChange = {
                             if (it == DismissValue.DismissedToStart) {
-                                deletedEvent.value = alert
+                               alertViewModel.addToSelectedIds(alert.id)
+                                onlyEvent.value = true
                                 showDeleteEventDialog.value = true
                             } else if (it == DismissValue.DismissedToEnd) {
                                 updatedEvent.value = alert.copy()
@@ -235,7 +240,8 @@ fun ArchiveScreen(navController: NavHostController) {
                                         expandVertically(animationSpec = tween(durationMillis = 2000)),
                             ) {
                                 invalidEvent(
-                                    alert
+                                    alert,
+                                    navController
                                 )
 
                             }
@@ -254,12 +260,38 @@ fun ArchiveScreen(navController: NavHostController) {
                 text = initialValue.value
             )
         }
+        if(events.value.isNotEmpty()){
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(end = 20.dp, bottom = 100.dp),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        for(event in events.value){
+                            alertViewModel.addToSelectedIds(event.id)
+                        }
+                        onlyEvent.value = false
+                        showDeleteEventDialog.value = true
+                    },
+                    containerColor = colorResource(id = R.color.appColor1),
+                    contentColor = Color.White
+                ) {
+                    Icon(
+                        Icons.Default.Delete ,
+                        contentDescription =null
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun invalidEvent(
-    alert: AlertTable
+    alert: AlertTable,
+    navController: NavHostController
 ) {
 
     Card(
@@ -268,7 +300,11 @@ fun invalidEvent(
             .height(IntrinsicSize.Max)
             .padding(10.dp)
             .shadow(10.dp, shape = RoundedCornerShape(20.dp))
-            .clip(shape = RoundedCornerShape(20.dp)),
+            .clip(shape = RoundedCornerShape(20.dp))
+            .clickable {
+                alertViewModel.setSelectedAlertToDisplay(alert)
+                navController.navigate(ScreensRoute.EventDetailsScreen.route)
+            },
         colors = CardDefaults.cardColors(colorResource(id = R.color.invalidEventColor)),
         elevation = CardDefaults.cardElevation(20.dp)
     ) {

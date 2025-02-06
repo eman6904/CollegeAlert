@@ -60,6 +60,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -73,6 +74,7 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberImagePainter
 import com.example.collegealart.MainActivity.Companion.alertViewModel
 import com.example.collegealart.R
+import com.example.collegealart.data.sharedPreference.PreferencesManager
 import com.example.collegealart.data.table.AlertTable
 import com.example.collegealart.navigation.ScreensRoute
 
@@ -83,6 +85,12 @@ import com.example.collegealart.navigation.ScreensRoute
 fun EventScreen(navController: NavHostController) {
 
     val alerts = alertViewModel.alerts.observeAsState()
+    val context = LocalContext.current
+    val shardPref = PreferencesManager(context)
+    LaunchedEffect(Unit) {
+        if(shardPref.getValue("ExpiredEvents"))
+            removeExpiredEvents()
+    }
     val showDeleteEventDialog = remember {
         mutableStateOf(false)
     }
@@ -93,19 +101,10 @@ fun EventScreen(navController: NavHostController) {
         mutableStateOf("")
     }
     val events = remember {
-        mutableStateOf<List<AlertTable>>(alerts.value!!)
-    }
-    val deletedEvent = remember {
-        mutableStateOf<AlertTable>(
-            AlertTable(
-                alertTitle = "",
-                date = "",
-                time = ""
-            )
-        )
+        mutableStateOf(alerts.value!!)
     }
     val updatedEvent = remember {
-        mutableStateOf<AlertTable>(
+        mutableStateOf(
             AlertTable(
                 alertTitle = "",
                 date = "",
@@ -116,7 +115,7 @@ fun EventScreen(navController: NavHostController) {
     val initialValue = remember {
         mutableStateOf("Loading")
     }
-    LaunchedEffect(searchedValue.value) {
+    LaunchedEffect(searchedValue.value,alerts.value) {
         events.value = alerts.value!!.filter { alert ->
             alert.alertTitle.lowercase()
                 .contains(searchedValue.value.lowercase(), true)
@@ -133,7 +132,7 @@ fun EventScreen(navController: NavHostController) {
             initialValue.value = ""
         }
     }
-    deleteEventDialog(show = showDeleteEventDialog, alert = deletedEvent.value)
+    deleteEventDialog(show = showDeleteEventDialog,onlyEvent = true)
     updateEventDialog(
         show = showUpdateEventDialog,
         alert = updatedEvent.value,
@@ -142,19 +141,27 @@ fun EventScreen(navController: NavHostController) {
 
     Box() {
         Column(
-            modifier = Modifier.padding(top = 20.dp)
+            modifier = Modifier.padding(top = 25.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(
+                text = "Upcoming Events",
+                fontFamily = FontFamily(Font(R.font.bold)),
+                fontSize = 20.sp,
+                color = colorResource(id = R.color.appColor1),
+                modifier = Modifier.padding(bottom = 5.dp)
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp),
+                    .padding(horizontal = 15.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
                 searchField(
                     modifier = Modifier.weight(4f),
-                    value = searchedValue.value,
-                    onValueChange = { newValue -> searchedValue.value = newValue },
+                    value = searchedValue,
                     placeholder = "Search"
                 )
                 Icon(
@@ -163,7 +170,8 @@ fun EventScreen(navController: NavHostController) {
                     tint = colorResource(id = R.color.appColor1),
                     modifier = Modifier
                         .weight(1f)
-                        .padding(5.dp)
+                        .height(58.dp)
+                        .fillMaxWidth()
                         .clickable {
                             navController.navigate(ScreensRoute.NewEventScreen.route)
                         }
@@ -182,7 +190,7 @@ fun EventScreen(navController: NavHostController) {
                     val dismissState = rememberDismissState(
                         confirmStateChange = {
                             if (it == DismissValue.DismissedToStart) {
-                                deletedEvent.value = alert
+                                alertViewModel.addToSelectedIds(alert.id)
                                 showDeleteEventDialog.value = true
                             } else if (it == DismissValue.DismissedToEnd) {
                                 updatedEvent.value = alert.copy()
@@ -260,7 +268,8 @@ fun EventScreen(navController: NavHostController) {
                                         expandVertically(animationSpec = tween(durationMillis = 2000)),
                             ) {
                                 event(
-                                    alert
+                                    alert,
+                                    navController
                                 )
 
                             }
@@ -283,7 +292,8 @@ fun EventScreen(navController: NavHostController) {
 
 @Composable
 fun event(
-    alert: AlertTable
+    alert: AlertTable,
+    navController: NavHostController
 ) {
 
     Card(
@@ -292,7 +302,11 @@ fun event(
             .height(IntrinsicSize.Max)
             .padding(10.dp)
             .shadow(10.dp, shape = RoundedCornerShape(20.dp))
-            .clip(shape = RoundedCornerShape(20.dp)),
+            .clip(shape = RoundedCornerShape(20.dp))
+            .clickable {
+                alertViewModel.setSelectedAlertToDisplay(alert)
+                navController.navigate(ScreensRoute.EventDetailsScreen.route)
+            },
         colors = CardDefaults.cardColors(Color.White),
         elevation = CardDefaults.cardElevation(20.dp)
     ) {
@@ -303,10 +317,10 @@ fun event(
 
             Card(
                 modifier = Modifier
-                    .fillMaxSize()
                     .weight(1f)
                     .padding(8.dp)
-                    .height(90.dp),
+                    .height(100.dp)
+                    .width(70.dp),
                 shape = CircleShape,
                 colors = CardDefaults.cardColors(Color.White)
             ) {
@@ -365,13 +379,12 @@ fun event(
 @Composable
 fun searchField(
     modifier: Modifier,
-    value: String,
-    onValueChange: (String) -> Unit,
+    value: MutableState<String>,
     placeholder: String
 ) {
     BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
+        value = value.value,
+        onValueChange = { it -> value.value = it },
         modifier = modifier
             .fillMaxWidth(),
         textStyle = TextStyle(
@@ -405,14 +418,14 @@ fun searchField(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Box() {
-                        if (value.isEmpty())
+                        if (value.value.isEmpty())
                             Text(
                                 text = placeholder,
                                 color = Color.Gray
                             )
                         innerTextField()
                     }
-                    if (value.isNotEmpty()) {
+                    if (value.value.isNotEmpty()) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
@@ -426,7 +439,7 @@ fun searchField(
                                 modifier = Modifier
                                     .size(28.dp)
                                     .clickable {
-
+                                        value.value = ""
                                     },
                                 tint = colorResource(id = R.color.appColor1)
                             )
@@ -441,7 +454,7 @@ fun searchField(
 @Composable
 fun deleteEventDialog(
     show: MutableState<Boolean>,
-    alert: AlertTable
+    onlyEvent:Boolean
 ) {
 
     val selectedAlerts = alertViewModel.selectedIds.observeAsState()
@@ -453,6 +466,7 @@ fun deleteEventDialog(
         ) {
             Dialog(
                 onDismissRequest = {
+                    alertViewModel.clearSelectedIds()
                     show.value = false
                 }
             ) {
@@ -481,7 +495,7 @@ fun deleteEventDialog(
                         modifier = Modifier.padding(5.dp)
                     )
                     Text(
-                        text = "You Want To delete this event",
+                        text = if(onlyEvent)"You Want To delete this event" else "You Want To delete all expired events",
                         fontSize = 13.sp,
                         modifier = Modifier.padding(5.dp)
                     )
@@ -494,7 +508,6 @@ fun deleteEventDialog(
                     ) {
                         Button(
                             onClick = {
-                                alertViewModel.addToSelectedIds(alert.id)
                                 selectedAlerts.value?.let { alertViewModel.deleteAlert(it) }
                                 show.value = false
                             },
@@ -516,6 +529,7 @@ fun deleteEventDialog(
                         }
                         Button(
                             onClick = {
+                                alertViewModel.clearSelectedIds()
                                 show.value = false
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -644,5 +658,10 @@ fun updateEventDialog(
             }
         }
     }
+}
+@RequiresApi(Build.VERSION_CODES.O)
+fun removeExpiredEvents(){
+    alertViewModel.deleteAlert(alertViewModel.alerts.value?.filter { isEventPassed(it.date, it.time) }
+        ?.map { it.id } ?: emptyList())
 }
 
