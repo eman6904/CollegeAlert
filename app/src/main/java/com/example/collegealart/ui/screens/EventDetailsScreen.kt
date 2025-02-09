@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -154,7 +155,7 @@ fun EventDetailsScreen(navController: NavHostController) {
                     tint = colorResource(id = R.color.appColor1)
                 )
                 Text(
-                    text = event.value!!.location ?: "not available",
+                    text = event.value!!.location ?: stringResource(R.string.not_assigned),
                     fontSize = 15.sp,
                     modifier = Modifier
                         .padding(10.dp)

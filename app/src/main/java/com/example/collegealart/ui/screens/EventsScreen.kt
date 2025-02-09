@@ -63,6 +63,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -87,8 +88,8 @@ fun EventScreen(navController: NavHostController) {
     val alerts = alertViewModel.alerts.observeAsState()
     val context = LocalContext.current
     val shardPref = PreferencesManager(context)
-    LaunchedEffect(Unit) {
-        if(shardPref.getValue("ExpiredEvents"))
+    LaunchedEffect(shardPref.getValue(stringResource(R.string.expiredevents))) {
+        if(shardPref.getValue(context.getString(R.string.expiredevents)))
             removeExpiredEvents()
     }
     val showDeleteEventDialog = remember {
@@ -113,7 +114,7 @@ fun EventScreen(navController: NavHostController) {
         )
     }
     val initialValue = remember {
-        mutableStateOf("Loading")
+        mutableStateOf(context.getString(R.string.loading))
     }
     LaunchedEffect(searchedValue.value,alerts.value) {
         events.value = alerts.value!!.filter { alert ->
@@ -125,9 +126,9 @@ fun EventScreen(navController: NavHostController) {
             )
         }
         if (events.value == null) {
-            initialValue.value = "Loading.."
+            initialValue.value = context.getString( R.string.loading)
         } else if (events.value!!.isEmpty()) {
-            initialValue.value = "No items"
+            initialValue.value = context.getString(R.string.no_items)
         } else {
             initialValue.value = ""
         }
@@ -146,7 +147,7 @@ fun EventScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Upcoming Events",
+                text = stringResource(R.string.upcoming_events),
                 fontFamily = FontFamily(Font(R.font.bold)),
                 fontSize = 20.sp,
                 color = colorResource(id = R.color.appColor1),
@@ -162,7 +163,7 @@ fun EventScreen(navController: NavHostController) {
                 searchField(
                     modifier = Modifier.weight(4f),
                     value = searchedValue,
-                    placeholder = "Search"
+                    placeholder = context.getString(R.string.search)
                 )
                 Icon(
                     painter = painterResource(id = R.drawable.add_event),

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -52,8 +53,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
@@ -76,6 +79,7 @@ import java.time.format.DateTimeFormatter
 fun ArchiveScreen(navController: NavHostController) {
 
     val alerts = alertViewModel.alerts.observeAsState()
+    val context = LocalContext.current
     val events = remember {
         mutableStateOf(alerts.value!!)
     }
@@ -102,7 +106,7 @@ fun ArchiveScreen(navController: NavHostController) {
         )
     }
     val initialValue = remember {
-        mutableStateOf("Loading")
+        mutableStateOf(context.getString(R.string.loading))
     }
     LaunchedEffect(searchedValue.value,alerts.value) {
         events.value = alerts.value!!.filter { alert ->
@@ -114,9 +118,9 @@ fun ArchiveScreen(navController: NavHostController) {
             )
         }
         if (events.value == null) {
-            initialValue.value = "Loading.."
+            initialValue.value = context.getString(R.string.loading)
         } else if (events.value!!.isEmpty()) {
-            initialValue.value = "No items"
+            initialValue.value = context.getString(R.string.no_items)
         } else {
             initialValue.value = ""
         }
@@ -135,7 +139,7 @@ fun ArchiveScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Expired Events",
+                text = stringResource(R.string.expired_events),
                 fontFamily = FontFamily(Font(R.font.bold)),
                 fontSize = 25.sp,
                 color = colorResource(id = R.color.appColor1),
@@ -144,7 +148,7 @@ fun ArchiveScreen(navController: NavHostController) {
             searchField(
                 modifier = Modifier.padding(vertical = 10.dp, horizontal = 15.dp),
                 value = searchedValue,
-                placeholder = "Search"
+                placeholder = stringResource(R.string.search)
             )
 
             LazyColumn(
@@ -315,10 +319,10 @@ fun invalidEvent(
 
             Card(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .width(70.dp)
                     .weight(1f)
                     .padding(8.dp)
-                    .height(90.dp),
+                    .height(100.dp),
                 shape = CircleShape,
                 colors = CardDefaults.cardColors(Color.White)
             ) {

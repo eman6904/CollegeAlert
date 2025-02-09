@@ -33,7 +33,7 @@ fun SplashScreen(navController: NavHostController){
        modifier = Modifier.fillMaxSize(),
        contentAlignment = Alignment.Center
    ){
-       val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.animation)) // Replace with your file name
+       val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.animation))
 
        val progress by animateLottieCompositionAsState(
            composition = composition,

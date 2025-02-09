@@ -53,6 +53,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -118,7 +119,7 @@ fun NewEventScreen(navController: NavHostController) {
     ) {
         item {
             Text(
-                text = "New Event",
+                text = stringResource(R.string.new_event),
                 fontSize = 30.sp,
                 fontFamily = FontFamily(Font(R.font.bold)),
                 modifier = Modifier.padding(30.dp),
@@ -131,7 +132,7 @@ fun NewEventScreen(navController: NavHostController) {
                 value = title.value,
                 onValueChange = { newValue -> title.value = newValue },
                 emptyTitle = emptyTitle,
-                placeholder = "Title"
+                placeholder = stringResource(R.string.title)
             )
         }
         item {
@@ -139,7 +140,7 @@ fun NewEventScreen(navController: NavHostController) {
             underlinedTextField(
                 value = aboutEvent.value?:"",
                 onValueChange = { newValue -> aboutEvent.value = newValue },
-                placeholder = "About Event"
+                placeholder = stringResource(R.string.about_event)
             )
         }
         item {
@@ -147,7 +148,7 @@ fun NewEventScreen(navController: NavHostController) {
             underlinedTextField(
                 value = location.value?:"",
                 onValueChange = { newValue -> location.value = newValue },
-                placeholder = "Location"
+                placeholder = stringResource(R.string.location)
             )
         }
         item {
@@ -155,7 +156,7 @@ fun NewEventScreen(navController: NavHostController) {
             calenderView(
                 selectedDate = selectedDate,
                 selectedTime = selectedTime,
-                placeholder = "Select date",
+                placeholder = stringResource(R.string.select_date),
                 isEmpty = emptyDate
             )
         }
@@ -164,7 +165,7 @@ fun NewEventScreen(navController: NavHostController) {
             calenderView(
                 selectedDate = selectedDate,
                 selectedTime = selectedTime,
-                placeholder = "Select time",
+                placeholder = stringResource(R.string.select_time),
                 isEmpty = emptyTime
             )
         }
@@ -209,7 +210,7 @@ fun NewEventScreen(navController: NavHostController) {
                 )
             ) {
                 Text(
-                    text = "Done",
+                    text = stringResource(R.string.done),
                     fontSize = 20.sp,
                     fontFamily = FontFamily(Font(R.font.bold)),
                     modifier = Modifier.padding(5.dp)
@@ -241,7 +242,6 @@ fun calenderView(
                 set(Calendar.HOUR_OF_DAY, mHour)
                 set(Calendar.MINUTE, mMinute)
             }
-            // تنسيق الوقت إلى 12 ساعة تلقائيًا
             selectedTime.value = DateFormat.format("hh:mm a", calendar).toString()
         }, mHour, mMinute, false
     )
@@ -249,7 +249,7 @@ fun calenderView(
     val mMonth = mCalendar[Calendar.MONTH]
     val mDay = mCalendar[Calendar.DAY_OF_MONTH]
     val mDatePickerDialog = DatePickerDialog(
-        ContextThemeWrapper(mContext, R.style.DatePickerTheme), // الثيم المخصص
+        ContextThemeWrapper(mContext, R.style.DatePickerTheme),
         { _, year, month, dayOfMonth ->
             selectedDate.value = "$dayOfMonth/${month + 1}/$year"
         },
@@ -262,7 +262,7 @@ fun calenderView(
             .fillMaxWidth()
             .padding(8.dp)
             .clickable {
-                if (placeholder == "Select date")
+                if (placeholder == mContext.getString(R.string.select_date))
                     mDatePickerDialog.show()
                 else
                     mTimePickerDialog.show()
@@ -272,7 +272,7 @@ fun calenderView(
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
-                painter =if(placeholder=="Select date") painterResource(id = R.drawable.calendar)
+                painter =if(placeholder == mContext.getString(R.string.select_date)) painterResource(id = R.drawable.calendar)
                 else
                     painterResource(id = R.drawable.clock_icon) ,
                 contentDescription = null,
@@ -281,7 +281,7 @@ fun calenderView(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if(placeholder=="Select date"){
+                text = if(placeholder==mContext.getString(R.string.select_date)){
 
                     if (selectedDate.value.isEmpty())
                         placeholder else selectedDate.value
@@ -290,7 +290,7 @@ fun calenderView(
                     if (selectedTime.value.isEmpty())
                         placeholder else selectedTime.value
                 },
-                color = if(placeholder=="Select date"){
+                color = if(placeholder==mContext.getString(R.string.select_date)){
 
                     if (selectedDate.value.isEmpty())
                         Color.Gray else Color.Black
@@ -337,6 +337,7 @@ fun underlinedTextField(
     placeholder: String,
     emptyTitle:MutableState<Boolean> = mutableStateOf(false)
 ) {
+    val context = LocalContext.current
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
@@ -356,7 +357,7 @@ fun underlinedTextField(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    if(placeholder == "Location"){
+                    if(placeholder == context.getString(R.string.location)){
                         Icon(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = null,
@@ -364,7 +365,7 @@ fun underlinedTextField(
                             tint = colorResource(id = R.color.appColor1)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                    }else if(placeholder == "Title"){
+                    }else if(placeholder == context.getString(R.string.title)){
                         Box(
                             contentAlignment = Alignment.CenterStart,
                         ) {
@@ -385,7 +386,7 @@ fun underlinedTextField(
                           )
                       innerTextField()
                   }
-                   if(placeholder!="Location"){
+                   if(placeholder!=context.getString(R.string.location)){
                        Spacer(modifier = Modifier.width(8.dp))
                        Box(
                            contentAlignment = Alignment.CenterEnd
@@ -491,7 +492,7 @@ fun imagePicker(
                     modifier = Modifier.size(100.dp)
                 )
                 Text(
-                    text = "image uploaded successfully",
+                    text = stringResource(R.string.image_uploaded_successfully),
                     fontSize = 13.sp,
                     color = Color.Green
                 )
@@ -508,7 +509,7 @@ fun imagePicker(
                     tint = colorResource(id = R.color.appColor1)
                 )
                 Text(
-                    text = "upload image",
+                    text = stringResource(R.string.upload_image),
                     fontSize = 10.sp,
                     color = colorResource(id = R.color.appColor1)
                 )
@@ -572,13 +573,13 @@ fun deleteUri(
                             .padding(5.dp)
                     )
                     Text(
-                        text = "Are You Sure ?",
+                        text = stringResource(R.string.are_you_sure),
                         fontSize = 18.sp,
                         fontFamily = FontFamily(Font(R.font.bold)),
                         modifier = Modifier.padding(5.dp)
                     )
                     Text(
-                        text = "You Want To delete this file",
+                        text = stringResource(R.string.you_want_to_delete_this_file),
                         fontSize = 13.sp,
                         modifier = Modifier.padding(5.dp)
                     )
@@ -607,7 +608,7 @@ fun deleteUri(
                                 .padding(3.dp)
                         ) {
                             Text(
-                                text = "Delete",
+                                text = stringResource(R.string.delete),
                                 fontSize = 15.sp,
                                 modifier = Modifier.padding(3.dp)
                             )
@@ -627,7 +628,7 @@ fun deleteUri(
                                 .padding(3.dp)
                         ) {
                             Text(
-                                text = "Cancel",
+                                text = stringResource(R.string.cancel),
                                 fontSize = 15.sp,
                                 modifier = Modifier.padding(3.dp)
                             )

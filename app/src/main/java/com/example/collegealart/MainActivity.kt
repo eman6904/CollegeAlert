@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -39,6 +40,7 @@ import com.example.collegealart.data.sharedPreference.PreferencesManager
 import com.example.collegealart.data.table.AlertTable
 import com.example.collegealart.data.viewModel.AlertViewModel
 import com.example.collegealart.navigation.BottomBar
+import com.example.collegealart.ui.screens.isEventPassed
 import com.example.collegealart.ui.theme.CollegeAlartTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import java.text.ParseException
@@ -49,13 +51,18 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
-    companion object{
-        lateinit var alertViewModel :AlertViewModel
+    companion object {
+        lateinit var alertViewModel: AlertViewModel
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        alertViewModel = ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(application))
+        alertViewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+        )
             .get(AlertViewModel::class.java)
         setContent {
             CollegeAlartTheme {
@@ -70,9 +77,14 @@ class MainActivity : ComponentActivity() {
             }
             val alerts = alertViewModel.alerts.observeAsState()
             createNotificationChannel(this)
-            if(!alerts.value.isNullOrEmpty())
-                scheduleEventNotifications(this, alerts.value!!)
-
+            if (!alerts.value.isNullOrEmpty())
+                scheduleNearestEventNotification(this, alerts.value!!.filter { alert ->
+                    !isEventPassed(
+                        date = alert.date,
+                        time = alert.time
+                    )
+                }
+                )
         }
     }
 }
@@ -100,40 +112,47 @@ fun createNotificationChannel(context: Context) {
         notificationManager.createNotificationChannel(channel)
     }
 }
-fun scheduleEventNotifications(context: Context, alertList: List<AlertTable>) {
-    val eventData = alertList.mapNotNull { alert ->
-        val eventTime = parseDateTime(alert.date, alert.time)
-        eventTime?.let {
-            Pair(it, alert.alertTitle)
+
+fun scheduleNearestEventNotification(context: Context, alertList: List<AlertTable>) {
+    val currentTime = System.currentTimeMillis()
+
+    val nearestEvent = alertList.mapNotNull { alert ->
+        parseDateTime(alert.date, alert.time)?.let { eventTime ->
+            if (eventTime > currentTime) Pair(eventTime, alert.alertTitle) else null
         }
+    }.minByOrNull { it.first }
+
+    nearestEvent?.let { (eventTime, eventTitle) ->
+        val delay = eventTime - currentTime
+
+        val workRequest = OneTimeWorkRequestBuilder<EventNotificationWorker>()
+            .setInputData(
+                Data.Builder()
+                    .putString("event_title", eventTitle)
+                    .putLong("event_time", eventTime)
+                    .build()
+            )
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .build()
+
+        WorkManager.getInstance(context).enqueue(workRequest)
     }
-
-    val workRequest = OneTimeWorkRequestBuilder<EventNotificationWorker>()
-        .setInputData(
-            Data.Builder()
-                .putStringArray("event_titles", eventData.map { it.second }.toTypedArray())
-                .putLongArray("event_times", eventData.map { it.first }.toLongArray())
-                .build()
-        )
-        .setInitialDelay(1, TimeUnit.MINUTES)
-        .build()
-
-    WorkManager.getInstance(context).enqueue(workRequest)
 }
 
 class EventNotificationWorker(appContext: Context, workerParams: WorkerParameters) :
     Worker(appContext, workerParams) {
 
     override fun doWork(): Result {
-        val eventTimes = inputData.getLongArray("event_times") ?: return Result.failure()
-        val eventTitles = inputData.getStringArray("event_titles") ?: return Result.failure()
+        val eventTime = inputData.getLong("event_time", -1)
+        val eventTitle = inputData.getString("event_title") ?: return Result.failure()
 
-        val currentTime = System.currentTimeMillis()
+        if (eventTime == -1L) return Result.failure()
+
         val sherdPref = PreferencesManager(applicationContext)
-        for ((index, eventTime) in eventTimes.withIndex()) {
-            if (isSameMinute(eventTime, currentTime)&&sherdPref.getValue("Notifications")) {
-                sendNotification(eventTime, eventTitles[index])
-            }
+        val currentTime = System.currentTimeMillis()
+
+        if (isSameMinute(eventTime, currentTime) && sherdPref.getValue("Notifications")) {
+            sendNotification(eventTime, eventTitle)
         }
 
         return Result.success()
@@ -154,22 +173,18 @@ class EventNotificationWorker(appContext: Context, workerParams: WorkerParameter
         val notificationManager =
             applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        val bitmapOptions = BitmapFactory.Options().apply { inScaled = false } // تقليل الدقة بنسبة 50%
+        val bitmapOptions = BitmapFactory.Options().apply { inScaled = false } // تحسين الدقة
         val largeIcon = BitmapFactory.decodeResource(applicationContext.resources, R.drawable.reminder, bitmapOptions)
-
-
 
         val notification = NotificationCompat.Builder(applicationContext, "event_channel")
             .setContentTitle("Welcome Dear ^^")
             .setContentText("We want to remind you of ${title} at ${DateFormat.format("hh:mm a", eventTime)}!")
             .setSmallIcon(R.drawable.college_alert_app_icon)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setStyle(NotificationCompat.BigPictureStyle()
-                .bigPicture(largeIcon))
+            .setStyle(NotificationCompat.BigPictureStyle().bigPicture(largeIcon))
             .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
             .build()
 
         notificationManager.notify(eventTime.hashCode(), notification)
     }
 }
-

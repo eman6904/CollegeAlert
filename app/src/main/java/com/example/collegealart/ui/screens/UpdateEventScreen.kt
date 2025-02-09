@@ -21,7 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
@@ -36,6 +38,7 @@ import com.example.collegealart.data.table.AlertTable
 fun UpdateEventScreen(navController:NavHostController){
 
     val selectedAlert = alertViewModel.selectedAlertToEdit.observeAsState()
+    val context = LocalContext.current
     val title = remember {
         mutableStateOf(selectedAlert.value!!.alertTitle)
     }
@@ -78,7 +81,7 @@ fun UpdateEventScreen(navController:NavHostController){
         ) {
             item {
                 Text(
-                    text = "Edit Event",
+                    text = stringResource(R.string.edit_event),
                     fontSize = 30.sp,
                     fontFamily = FontFamily(Font(R.font.bold)),
                     modifier = Modifier.padding(30.dp),
@@ -91,7 +94,7 @@ fun UpdateEventScreen(navController:NavHostController){
                     value = title.value,
                     onValueChange = { newValue -> title.value = newValue },
                     emptyTitle = emptyTitle,
-                    placeholder = "Title"
+                    placeholder = context.getString(R.string.title)
                 )
             }
             item {
@@ -99,7 +102,7 @@ fun UpdateEventScreen(navController:NavHostController){
                 underlinedTextField(
                     value = aboutEvent.value?:"",
                     onValueChange = { newValue -> aboutEvent.value = newValue },
-                    placeholder = "About Event"
+                    placeholder = context.getString(R.string.about_event)
                 )
             }
             item {
@@ -107,7 +110,7 @@ fun UpdateEventScreen(navController:NavHostController){
                 underlinedTextField(
                     value = location.value?:"",
                     onValueChange = { newValue -> location.value = newValue },
-                    placeholder = "Location"
+                    placeholder = context.getString(R.string.location)
                 )
             }
             item {
@@ -115,7 +118,7 @@ fun UpdateEventScreen(navController:NavHostController){
                 calenderView(
                     selectedDate = selectedDate,
                     selectedTime = selectedTime,
-                    placeholder = "Select date",
+                    placeholder = context.getString(R.string.select_date),
                     isEmpty = emptyDate
                 )
             }
@@ -124,7 +127,7 @@ fun UpdateEventScreen(navController:NavHostController){
                 calenderView(
                     selectedDate = selectedDate,
                     selectedTime = selectedTime,
-                    placeholder = "Select time",
+                    placeholder = context.getString(R.string.select_time),
                     isEmpty = emptyTime
                 )
             }
@@ -171,7 +174,7 @@ fun UpdateEventScreen(navController:NavHostController){
                     )
                 ) {
                     Text(
-                        text = "Done",
+                        text = context.getString(R.string.done),
                         fontSize = 20.sp,
                         fontFamily = FontFamily(Font(R.font.bold)),
                         modifier = Modifier.padding(5.dp)

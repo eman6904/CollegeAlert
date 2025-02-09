@@ -27,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
@@ -41,18 +43,19 @@ import com.example.collegealart.R
 fun SettingsScreen(navController: NavHostController){
 
     val sharedPreferences = alertViewModel.sharedPrefManager.observeAsState()
+    val context = LocalContext.current
     val a = remember{
-        mutableStateOf(sharedPreferences.value!!.getValue("Notifications"))
+        mutableStateOf(sharedPreferences.value!!.getValue(context.getString(R.string.notifications)))
     }
     val b = remember{
-        mutableStateOf(sharedPreferences.value!!.getValue("ExpiredEvents"))
+        mutableStateOf(sharedPreferences.value!!.getValue(context.getString(R.string.expiredevents)))
     }
 
     LaunchedEffect(a.value){
-        sharedPreferences.value!!.saveValue("Notifications",a.value)
+        sharedPreferences.value!!.saveValue(context.getString(R.string.notifications),a.value)
     }
     LaunchedEffect(b.value){
-        sharedPreferences.value!!.saveValue("ExpiredEvents",b.value)
+        sharedPreferences.value!!.saveValue(context.getString(R.string.expiredevents),b.value)
     }
     Column(
         modifier = Modifier
@@ -61,7 +64,7 @@ fun SettingsScreen(navController: NavHostController){
         horizontalAlignment = Alignment.CenterHorizontally
     ){
         Text(
-            text = "Settings",
+            text = stringResource(R.string.settings),
             fontFamily = FontFamily(Font(R.font.bold)),
             fontSize = 25.sp,
             color = colorResource(id = R.color.appColor1),
@@ -81,7 +84,7 @@ fun SettingsScreen(navController: NavHostController){
                     .background(color = colorResource(id = R.color.appColor1)),
             )
             Text(
-                text = "Enable Notification"
+                text = stringResource(R.string.enable_notification)
             )
             Box(
                 contentAlignment = Alignment.CenterEnd,
@@ -114,7 +117,7 @@ fun SettingsScreen(navController: NavHostController){
                     .background(color = colorResource(id = R.color.appColor1)),
             )
             Text(
-                text = "Auto-remove(expired events)"
+                text = stringResource(R.string.auto_remove_expired_events)
             )
             Box(
                 contentAlignment = Alignment.CenterEnd,
